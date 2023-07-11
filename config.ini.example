@@ -1,0 +1,12 @@
+[Mastodon]
+access_token = you_access
+client_id = your_client_id
+client_secret = your_secret
+api_base_url = https://masto.ai
+
+[User]
+initial_user = @vsv@masto.ai
+home_server = masto.ai
+
+[Settings]
+max_depth = 4
