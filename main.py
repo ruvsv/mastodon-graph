@@ -2,6 +2,8 @@ from mastodon import Mastodon
 import pandas as pd
 from tqdm import tqdm
 import configparser
+import time
+import requests
 
 # Чтение конфигурационного файла
 config = configparser.ConfigParser()
@@ -15,19 +17,25 @@ mastodon = Mastodon(
     api_base_url=config['Mastodon']['api_base_url']
 )
 
-# Записать заголовок файла
-with open('data.csv', 'w') as f:
-    f.write('user,follower,following\n')
-
 def fetch_followers(user_id):
     """Получить подписчиков пользователя."""
-    followers = mastodon.account_followers(user_id)
-    return followers
+    while True:
+        try:
+            followers = mastodon.account_followers(user_id)
+            return followers
+        except requests.exceptions.ConnectionError:
+            print("Connection error when fetching followers, waiting 10 seconds before retrying...")
+            time.sleep(10)
 
 def fetch_following(user_id):
     """Получить пользователей, на которых подписан пользователь."""
-    following = mastodon.account_following(user_id)
-    return following
+    while True:
+        try:
+            following = mastodon.account_following(user_id)
+            return following
+        except requests.exceptions.ConnectionError:
+            print("Connection error when fetching following, waiting 10 seconds before retrying...")
+            time.sleep(10)
 
 # Создайте прогресс-бар вне функции
 pbar = tqdm(total=50000)  # 100 - это просто пример, замените это на ваше реальное количество итераций
@@ -60,6 +68,8 @@ def process_user(user_id, user_acct, depth=1):
     df = pd.DataFrame(data)
     df.to_csv('data.csv', mode='a', header=False, index=False)
 
+    # Пауза 0.1 секунды перед следующим запросом к API
+    time.sleep(0.1)
 
 def get_account(username):
     """Получить аккаунт по его имени."""
@@ -75,4 +85,3 @@ if account is not None:
     process_user(account['id'], user_acct)
 else:
     print("Пользователь не найден.")
-1
