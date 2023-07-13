@@ -17,6 +17,11 @@ mastodon = Mastodon(
     api_base_url=config['Mastodon']['api_base_url']
 )
 
+# Записать заголовок файла
+with open('graph_data/data.csv', 'w') as f:
+    f.write('user,follower,following\n')
+
+
 def fetch_followers(user_id):
     """Получить подписчиков пользователя."""
     while True:
@@ -37,8 +42,8 @@ def fetch_following(user_id):
             print("Connection error when fetching following, waiting 10 seconds before retrying...")
             time.sleep(10)
 
-# Создайте прогресс-бар вне функции
-pbar = tqdm(total=50000)  # 100 - это просто пример, замените это на ваше реальное количество итераций
+# Прогресс-бар вне функции
+pbar = tqdm(total=100000)  # число итераций ориентировочное, для визуала
 
 def process_user(user_id, user_acct, depth=1):
     """Обработать пользователя, получить его подписчиков и подписки, и рекурсивно обработать их (до max_depth)."""
@@ -60,7 +65,7 @@ def process_user(user_id, user_acct, depth=1):
         if depth < max_depth:
             process_user(followee.id, followee_acct, depth=depth + 1)
 
-    # Обновите прогресс-бар
+    # Обновляем прогресс-бар
     pbar.update(len(followers) + len(following))
     pbar.set_description(f"Processing user {user_acct}")
 
@@ -68,8 +73,9 @@ def process_user(user_id, user_acct, depth=1):
     df = pd.DataFrame(data)
     df.to_csv('data.csv', mode='a', header=False, index=False)
 
-    # Пауза 0.1 секунды перед следующим запросом к API
-    time.sleep(0.1)
+    # Пауза 1 секунда перед следующим запросом к API, возможно лучше больше чем 1 сек
+    # подробнее https://mastodonpy.readthedocs.io/en/stable/01_general.html
+    time.sleep(1)
 
 def get_account(username):
     """Получить аккаунт по его имени."""
@@ -78,7 +84,7 @@ def get_account(username):
         return accounts[0]
     return None
 
-# Запустить процесс с вашим пользователем
+# Запустить процесс от нужного пользовотеля (логичнее начинать с себя)
 account = get_account(config['User']['initial_user'])
 if account is not None:
     user_acct = account['acct'] if '@' in account['acct'] else f"{account['acct']}@{config['User']['home_server']}"
